@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+    <title>d3.js and external SVGs</title>
+    <meta name="viewport" content="width=device-width">
+<script>
+const animateCircle = function(circle) {
+  let startTime = 0;
+  const totalTime = 3000; // 1000ms = 1s
+  const animateStep = (timestamp) => {
+    if (!startTime) startTime = timestamp;
+    // progress goes from 0 to 1 over 1s
+    const progress = (timestamp - startTime) / totalTime;
+    // move right 100 px
+    var x = parseFloat(circle.getAttribute('cx'));
+    var y = parseFloat(circle.getAttribute('cy'));
+    circle.setAttribute('cx', x+ 0.001 * (timestamp - startTime));
+    circle.setAttribute('cy', y+ 0.001 * (timestamp - startTime));
+    if (progress < 1) {
+      window.requestAnimationFrame(animateStep);
+    }
+  }
+  window.requestAnimationFrame(animateStep);
+};
+</script>
+<script type="text/javascript" src="https://d3js.org/d3.v3.min.js"></script>
+</head>
+<body>
+  <button type="button" id="start"> Start </button>
+  <div id="svg-container"></div>
+  <script type="text/javascript">
+    d3.xml('static/images/lund-map.svg', "image/svg+xml", function(xml){
+        d3.select('#svg-container').node().append(xml.documentElement);
+        select_circle = d3.select("svg").append("circle")
+                  .attr("cx", 505.454474)
+                  .attr("cy", 451.442409 )
+                  .attr("r", 5)
+                  .attr('id', 'redCircle')
+                  .attr('classname', 'redCircle')
+                  .style("fill", "red");
+        circle = select_circle.node();
+        // animateCircle(circle)
+        console.log(circle);
+        d3.select("button").on("click", function(){
+          animateCircle(circle)
+        });
+    });
+  </script>
+</body></html>
