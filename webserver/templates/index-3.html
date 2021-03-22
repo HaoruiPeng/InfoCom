@@ -1,0 +1,56 @@
+<html>
+  <head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script type="text/javascript" src="https://d3js.org/d3.v3.min.js"></script>
+    <script>
+    const animateCircle = function(circle) {
+      let startTime = 0;
+      const totalTime = 3000; // 1000ms = 1s
+      circle.setAttributeNS(null, 'cx', '505.454474');
+      circle.setAttributeNS(null, 'cy', '451.442409');
+      const animateStep = (timestamp) => {
+        if (!startTime) startTime = timestamp;
+        // progress goes from 0 to 1 over 1s
+        const progress = (timestamp - startTime) / totalTime;
+        // move right 100 px
+        var x = parseFloat(circle.getAttributeNS(null, 'cx'));
+        var y = parseFloat(circle.getAttributeNS(null, 'cy'));
+        circle.setAttributeNS(null, 'cx', x+ 0.001 * (timestamp - startTime));
+        circle.setAttributeNS(null, 'cy', y+ 0.001 * (timestamp - startTime));
+        if (progress < 1) {
+          window.requestAnimationFrame(animateStep);
+        }
+      }
+      window.requestAnimationFrame(animateStep);
+    };
+    </script>
+  </head>
+  <body>
+  </body>
+    <button type="button" id="start"> Start </button>
+    <object id="map-html" width="1200" height="900" data="static/src/lund-map.html"></object>
+    <script type="text/javascript">
+      document.getElementById("map-html").addEventListener('load', function(){
+        var doc = this.contentDocument;
+        var svg = doc.getElementsByClassName("mpld3-figure")[0];
+        console.log(svg);
+        var circleNode = doc.createElementNS("http://www.w3.org/2000/svg", "circle");
+        circleNode.setAttributeNS(null, 'cx', '505.454474');
+        circleNode.setAttributeNS(null, 'cy', '451.442409');
+        circleNode.setAttributeNS(null, 'r', '3');
+        circleNode.setAttributeNS(null, 'fill', 'red');
+        circleNode.setAttributeNS(null, 'id', 'redCircle');
+        svg.appendChild(circleNode);
+    });
+    </script>
+    <script type="text/javascript">
+       document.getElementById("map-html").addEventListener("load", function() {
+         var doc = this.contentDocument;
+         var circle = doc.getElementById("redCircle");
+         console.log(circle);
+         document.getElementById('start').addEventListener('click', function(){
+             animateCircle(circle);
+         });
+    });
+    </script>
+</html>

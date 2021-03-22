@@ -12,5 +12,12 @@
         circleNode.setAttributeNS(null, 'id', 'redCircle');
         svg.appendChild(circleNode);
       }
+      else{
+        circleNode.setAttributeNS(null, 'cx', circle_x_src);
+        circleNode.setAttributeNS(null, 'cy', circle_y_src);
+        circleNode.setAttributeNS(null, 'r', '3');
+        circleNode.setAttributeNS(null, 'fill', 'red');
+        circleNode.setAttributeNS(null, 'id', 'redCircle');
+      }
       });
   });
