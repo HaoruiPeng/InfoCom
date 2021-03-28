@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta charset="utf-8">
+  <title>external mpld3 SVGs</title>
+  <script>
+  const animateCircle = function(circle) {
+    let startTime = 0;
+    const totalTime = 3000; // 1000ms = 1s
+    circle.setAttributeNS(null, 'cx', '505.454474');
+    circle.setAttributeNS(null, 'cy', '451.442409');
+    const animateStep = (timestamp) => {
+      if (!startTime) startTime = timestamp;
+      // progress goes from 0 to 1 over 1s
+      const progress = (timestamp - startTime) / totalTime;
+      // move right 100 px
+      var x = parseFloat(circle.getAttributeNS(null, 'cx'));
+      var y = parseFloat(circle.getAttributeNS(null, 'cy'));
+      console.log(x);
+      circle.setAttributeNS(null, 'cx', x+ 0.001 * (timestamp - startTime));
+      circle.setAttributeNS(null, 'cy', y+ 0.001 * (timestamp - startTime));
+      if (progress < 1) {
+        window.requestAnimationFrame(animateStep);
+      }
+    }
+    window.requestAnimationFrame(animateStep);
+  };
+  </script>
+  <script type="text/javascript" src="https://d3js.org/d3.v3.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+</head>
+
+<body>
+  <button type="button" id="start"> Start </button>
+  <object id="map" data="static/images/lund-map.svg" type="image/svg+xml" ></object>
+  <script type="text/javascript">
+     document.getElementById("map").addEventListener("load", function() {
+		     var doc = this.getSVGDocument();
+		     var svg = doc.getElementById("map-svg");
+         var circleNode = doc.createElementNS("http://www.w3.org/2000/svg", "circle");
+         circleNode.setAttributeNS(null, 'cx', '505.454474');
+         circleNode.setAttributeNS(null, 'cy', '451.442409');
+         circleNode.setAttributeNS(null, 'r', '3');
+         circleNode.setAttributeNS(null, 'fill', 'red');
+         circleNode.setAttributeNS(null, 'id', 'redCircle');
+         svg.appendChild(circleNode);
+		// TweenMax.to(path, 33, { rotation:360, repeat:-1, transformOrigin:"50% 50%", ease:Linear.easeNone });
+	});
+  </script>
+
+  <script type="text/javascript">
+     document.getElementById("map").addEventListener("load", function() {
+		     var doc = this.getSVGDocument();
+		     var circle = doc.getElementById("redCircle");
+         console.log(circle);
+         document.getElementById('start').addEventListener('click', function() {
+           animateCircle(circle);
+         });
+	});
+  </script>
+</body></html>
