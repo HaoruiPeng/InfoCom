@@ -1,4 +1,4 @@
-from flask import Flask, redirect, render_template, jsonify, request
+from flask import Flask, redirect, render_template, jsonify, request, url_for
 import json
 from geopy.geocoders import Nominatim
 
@@ -23,6 +23,20 @@ def translate(coords):
 
 @app.route('/')
 def do_GET():
+    return redirect(url_for('login'))
+
+@app.route('/login', methods=['POST', 'GET'])
+def login():
+    if request.method == 'POST':
+        r = request.form.get('SerialNumber')
+        return redirect(url_for('map', SerialNumber=r))
+    else:
+        return render_template('login.html')
+
+@app.route('/map', methods=['POST', 'GET'])
+def map():
+    SerialNumber = request.args['SerialNumber']
+    print(SerialNumber)
     return render_template('index.html')
 
 @app.route('/submit',  methods=['POST'])
