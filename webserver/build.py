@@ -1,8 +1,18 @@
-from flask import Flask, redirect, render_template, jsonify, request, url_for
+from flask import Flask, redirect, render_template, jsonify, request, url_for, Response, session
 import json
 from geopy.geocoders import Nominatim
+import time
+from flask_socketio import SocketIO, emit
 
 app = Flask(__name__)
+app.secret_key = 'dljsaklqk24e21cjn!Ew@@dsa5'
+socket = SocketIO(app, cors_allowed_origins="*")
+
+class DataStore():
+    SN = None
+    rasp_time = None
+
+rasp_data = DataStore()
 
 def translate(coords):
     x_origins_lim = (13.143390664, 13.257501336)
@@ -25,6 +35,15 @@ def translate(coords):
 def do_GET():
     return redirect(url_for('login'))
 
+@app.route('/clock', methods=['POST'])
+def get_clock():
+    SN = request.args.get('SerialNumber')
+    current_time = request.get_json()
+    rasp_data.SN = SN
+    rasp_data.rasp_time = str(current_time['time'])
+    print("SN {}: {}".format(SN, current_time['time']))
+    return 'Get data'
+
 @app.route('/login', methods=['POST', 'GET'])
 def login():
     if request.method == 'POST':
@@ -35,9 +54,18 @@ def login():
 
 @app.route('/map', methods=['POST', 'GET'])
 def map():
-    SerialNumber = request.args['SerialNumber']
-    print(SerialNumber)
-    return render_template('index.html')
+    if request.method == 'GET':
+        SerialNumber = request.args['SerialNumber']
+        print(SerialNumber)
+        return render_template('index.html', SerialNumber=SerialNumber)
+
+@socket.on('get_time')
+def get_time():
+    while True:
+        current_time = rasp_data.rasp_time
+        print(current_time)
+        emit('get_time', current_time)
+        time.sleep(2)
 
 @app.route('/submit',  methods=['POST'])
 def do_submit():
