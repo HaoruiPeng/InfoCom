@@ -65,7 +65,7 @@ def get_time():
         current_time = rasp_data.rasp_time
         print(current_time)
         emit('get_time', current_time)
-        time.sleep(2)
+        time.sleep(1)
 
 @app.route('/submit',  methods=['POST'])
 def do_submit():
