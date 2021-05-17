@@ -1,23 +1,83 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login</title>
-  <link rel="stylesheet" href="static/css/login-page.css">
-</head>
+<html>
+  <head>
+      <!-- Required meta tags -->
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <!-- Fire UI CSS -->
+      <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@fire-ui/fire-ui@0.2.4/FireUI.min.css">
+      <!-- Fire UI Javascript -->
+      <script src="https://cdn.jsdelivr.net/npm/@fire-ui/fire-ui@0.2.4/FireUI.min.js"></script>
+      <title>Login</title>
+  </head>
 
-<body>
-<main id="main-holder">
-    <h1 id="login-header">Login</h1>
+  <body>
+    <div class="topnav theme-reverse topnav-shadow">
+      <span class="topnav-brand">Navbar</span>
+      <span class="topnav-hamburger-menu" data-target = "myTopnav">&#x2630;</span>
+      <div class="topnav-right" id="myTopnav">
+          <a class="topnav-item" data-switch-theme="light, dark, aqua, sky, phoenix, indigo, teal">Switch theme</a>
+      </div>
+    </div>
 
-    <form id="login-form" method="POST">
-      <input type="text" name="SerialNumber" id="username-field" class="login-form-field" placeholder="Raspberry Serial Number">
-      <!-- <input type="password" name="password" id="password-field" class="login-form-field" placeholder="Password"> -->
-      <input type="submit" value="Login" id="login-form-submit">
-    </form>
+    <div id="form">
+      <div className="centeredForm">
+        <div class="box theme-reverse">
+          <div class="box">
+            <!-- Create a Tab that contain Login and Register Tab -->
+            <div class="tab" data-tab="formTab">
+                <button class="tab-btn btn-dark" data-content="login">Login</button>
+                <button class="tab-btn btn-light" data-content="register">Register</button>
+            </div>
 
-  </main>
-</body>
-
+            <div class="tab-contents" id="formTab">
+              <!-- Login Tab -->
+              <div id="login" class="tab-content tab-content-active">
+                <form method="POST">
+                    <div class="form-group form-animate">
+                        <label for="login-username" class="form-label">SerialNumber</label>
+                        <input type="text" name="login-SerialNumber" class="input-animate" id="login-username" required autocomplete="username">
+                    </div>
+                    <div class="form-group form-animate">
+                        <label for="login-password" class="form-label">Password</label>
+                        <input type="password" name="login-password" class="input-animate" id="login-password" required autocomplete="current-password">
+                    </div>
+                    <div class="form-group">
+                        <button class="btn form-control theme-adjust">Login</button>
+                    </div>
+                </form>
+              </div>
+              <!-- Register Tab -->
+              <div id="register" class="tab-content">
+                <div id="helloworld" class="tab-content tab-content-active">
+                  <form method="POST">
+                    <div class="form-group form-animate">
+                      <label for="reg-username" class="form-label">SerialNumber</label>
+                      <input type="text" name="reg-SerialNumber" class="input-animate" id="reg-username" required autocomplete="username">
+                    </div>
+                    <div class="form-group form-animate">
+                      <label for="reg-email" class="form-label">Email</label>
+                      <input type="text" name="reg-email" class="input-animate" id="reg-email" required autocomplete="email">
+                    </div>
+                    <div class="form-group form-animate">
+                      <label for="reg-password" class="form-label">Password</label>
+                      <input type="password" name="reg-password" class="input-animate" id="reg-password" required autocomplete="new-password">
+                    </div>
+                    <div class="form-group form-animate">
+                      <label for="confirm-password" class="form-label">Confirm Password</label>
+                      <input type="password"  name="comfirm-password" class="input-animate" id="confirm-password" required autocomplete="new-password">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <button class="btn form-control theme-adjust">Register</button>
+                  </div>
+                </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mb-5"></div>
+      </div>
+    </div>
+  </body>
 </html>
