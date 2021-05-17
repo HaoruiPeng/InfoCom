@@ -3,10 +3,21 @@ import json
 from geopy.geocoders import Nominatim
 import time
 from flask_socketio import SocketIO, emit
+from flask_mysqldb import MySQL
+import MySQLdb.cursors
+import re
 
 app = Flask(__name__)
 app.secret_key = 'dljsaklqk24e21cjn!Ew@@dsa5'
 socket = SocketIO(app, cors_allowed_origins="*")
+
+app.config['MYSQL_HOST'] = 'localhost'
+app.config['MYSQL_USER'] = 'root'
+app.config['MYSQL_PASSWORD'] = ''
+app.config['MYSQL_DB'] = 'DBlogin'
+
+# Intialize MySQL
+mysql = MySQL(app)
 
 class DataStore():
     SN = None
@@ -44,11 +55,33 @@ def get_clock():
     print("SN {}: {}".format(SN, current_time['time']))
     return 'Get data'
 
+def register_user(SerialNumber, email, password):
+    return True
+
+def auth_user(SerialNumber, password):
+    return True
+
 @app.route('/login', methods=['POST', 'GET'])
 def login():
     if request.method == 'POST':
-        r = request.form.get('SerialNumber')
-        return redirect(url_for('map', SerialNumber=r))
+        if request.form.get('login-SerialNumber') is None:
+            if request.form.get('reg-password') == request.form.get('comfirm-password'):
+                reg_serialnumber = request.form.get('reg-SerialNumber')
+                reg_email = request.form.get("reg_email")
+                reg_password = request.form.get('reg-password')
+                if register_user(reg_serialnumber, reg_email, reg_password):
+                    return "Now you can Login"
+                else:
+                    return "User exist, please Login"
+            else:
+                return "Passwords not match"
+        else:
+            login_serialnumber = request.form.get('login-SerialNumber')
+            login_password = request.form.get('login-password')
+            if auth_user(login_serialnumber, login_password):
+                return redirect(url_for('map', SerialNumber=login_serialnumber))
+            else:
+                return "please check username or password"
     else:
         return render_template('login.html')
 
