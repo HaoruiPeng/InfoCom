@@ -56,32 +56,54 @@ def get_clock():
     return 'Get data'
 
 def register_user(SerialNumber, email, password):
-    return True
+    print(SerialNumber, email, password)
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute('SELECT * FROM accounts WHERE serialnumber = %s OR email = %s', (SerialNumber, email))
+    account = cursor.fetchone()
+    if account:
+        msg = 'Account already exists!'
+    elif not re.match(r'[^@]+@[^@]+\.[^@]+', email):
+        msg = 'Invalid email address!'
+    elif not re.match(r'[A-Za-z0-9]+', SerialNumber):
+        msg = 'serialnumber must contain only characters and numbers!'
+    elif SerialNumber is None or password is None or email is None:
+        msg = 'Please fill out the form!'
+    else:
+        # Account doesnt exists and the form data is valid, now insert new account into accounts table
+        cursor.execute('INSERT INTO accounts VALUES (NULL, %s, %s, %s)', (SerialNumber, password, email))
+        mysql.connection.commit()
+        msg = 'You have successfully registered! Please login.'
+    return msg
 
 def auth_user(SerialNumber, password):
-    return True
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute('SELECT * FROM accounts WHERE serialnumber = %s AND password = %s', (SerialNumber, password))
+        # Fetch one record and return result
+    account = cursor.fetchone()
+    return account
 
 @app.route('/login', methods=['POST', 'GET'])
 def login():
     if request.method == 'POST':
-        if request.form.get('login-SerialNumber') is None:
+        if request.form.get('login-serialnumber') is None:
             if request.form.get('reg-password') == request.form.get('comfirm-password'):
-                reg_serialnumber = request.form.get('reg-SerialNumber')
-                reg_email = request.form.get("reg_email")
+                reg_serialnumber = request.form.get('reg-serialnumber')
+                reg_email = request.form.get("reg-email")
                 reg_password = request.form.get('reg-password')
-                if register_user(reg_serialnumber, reg_email, reg_password):
-                    return "Now you can Login"
-                else:
-                    return "User exist, please Login"
+                print(reg_serialnumber, reg_email, reg_password)
+                print("=======================================")
+                msg = register_user(reg_serialnumber, reg_email, reg_password)
+                return render_template('login.html', msg=msg)
             else:
-                return "Passwords not match"
+                return render_template('login.html', msg="please check username or password")
+
         else:
-            login_serialnumber = request.form.get('login-SerialNumber')
+            login_serialnumber = request.form.get('login-serialnumber')
             login_password = request.form.get('login-password')
             if auth_user(login_serialnumber, login_password):
                 return redirect(url_for('map', SerialNumber=login_serialnumber))
             else:
-                return "please check username or password"
+                return render_template('login.html', msg="please check username or password")
     else:
         return render_template('login.html')
 
