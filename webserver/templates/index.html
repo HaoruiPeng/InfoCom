@@ -32,10 +32,10 @@
       var socket = io.connect('http://localhost:5000')
       socket.on('connect', function() {
           console.log('Successfully connected to server!');
-          socket.emit('get_time')
+          socket.emit('get_time', {{SerialNumber}})
       })
-      socket.on('get_time', function(data) {
-          document.getElementById('txt').innerHTML = data;
+      socket.on('get_time', function(data, email) {
+          document.getElementById('txt').innerHTML = data + ',' + email;
       })
   </script>
   <p>Time on Raspberyry Pi: </p>

@@ -13,7 +13,7 @@ socket = SocketIO(app, cors_allowed_origins="*")
 
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = ''
+app.config['MYSQL_PASSWORD'] = 'penny9305120075'
 app.config['MYSQL_DB'] = 'DBlogin'
 
 # Intialize MySQL
@@ -115,11 +115,14 @@ def map():
         return render_template('index.html', SerialNumber=SerialNumber)
 
 @socket.on('get_time')
-def get_time():
+def get_time(SerialNumber):
+    print(SerialNumber)
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
     while True:
+        cursor.execute('SELECT * FROM accounts WHERE serialnumber = %s', (SerialNumber, ))
+        account = cursor.fetchone()
         current_time = rasp_data.rasp_time
-        print(current_time)
-        emit('get_time', current_time)
+        emit('get_time', (account['id'], account['email']))
         time.sleep(1)
 
 @app.route('/submit',  methods=['POST'])
