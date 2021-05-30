@@ -18,6 +18,7 @@ socket = SocketIO(app, cors_allowed_origins="*")
 
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
+<<<<<<< HEAD
 app.config['MYSQL_PASSWORD'] = ''
 app.config['MYSQL_DB'] = 'RaspberryPi'
 
@@ -27,6 +28,10 @@ redis_server = redis.Redis("localhost")
 
 # sess = Session()
 # sess.init_app(app)
+=======
+app.config['MYSQL_PASSWORD'] = 'penny9305120075'
+app.config['MYSQL_DB'] = 'DBlogin'
+>>>>>>> 3c637b32fb289745221e53cccf170916d2aaed6e
 
 # Intialize MySQL
 mysql = MySQL(app)
@@ -147,6 +152,7 @@ def map():
 @socket.on('get_time')
 def get_time(SerialNumber):
     print(SerialNumber)
+<<<<<<< HEAD
     # cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
     while True:
         coords = redis_server.get(SerialNumber).decode('ascii')
@@ -159,6 +165,14 @@ def get_time(SerialNumber):
         # emit('get_time', (coords['x'], coords['y']))
         print('Socket emit value {}'.format((x_coord, y_coord)))
         emit('get_time', (x_coord, y_coord))
+=======
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    while True:
+        cursor.execute('SELECT * FROM accounts WHERE serialnumber = %s', (SerialNumber, ))
+        account = cursor.fetchone()
+        current_time = rasp_data.rasp_time
+        emit('get_time', (account['id'], account['email']))
+>>>>>>> 3c637b32fb289745221e53cccf170916d2aaed6e
         time.sleep(1)
 
 @app.route('/submit',  methods=['POST'])
