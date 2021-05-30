@@ -6,15 +6,27 @@ from flask_socketio import SocketIO, emit
 from flask_mysqldb import MySQL
 import MySQLdb.cursors
 import re
+from flask_cors import CORS
+import redis
+from os import environ
+from flask_session import Session
 
 app = Flask(__name__)
+CORS(app, supports_credentials=True)
 app.secret_key = 'dljsaklqk24e21cjn!Ew@@dsa5'
 socket = SocketIO(app, cors_allowed_origins="*")
 
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = ''
-app.config['MYSQL_DB'] = 'DBlogin'
+app.config['MYSQL_DB'] = 'RaspberryPi'
+
+# redis_server = redis.Redis("redis://127.0.0.1:6379")
+redis_server = redis.Redis("localhost")
+# app.config['SESSION_REDIS'] = redis.from_url('redis://127.0.0.1:6379')
+
+# sess = Session()
+# sess.init_app(app)
 
 # Intialize MySQL
 mysql = MySQL(app)
@@ -49,16 +61,25 @@ def do_GET():
 @app.route('/clock', methods=['POST'])
 def get_clock():
     SN = request.args.get('SerialNumber')
-    current_time = request.get_json()
-    rasp_data.SN = SN
-    rasp_data.rasp_time = str(current_time['time'])
-    print("SN {}: {}".format(SN, current_time['time']))
+    print('-------------------------------')
+    print(SN)
+    coords = request.get_json()
+    x_coord = coords['x']
+    y_coord = coords['y']
+    print('##############################')
+    # cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    # cursor.execute('UPDATE raspberries SET x = %s WHERE serialnumber = %s', (x_coord, SN))
+    # print("SN {}: ({}, {})".format(SN, x_coord, y_coord))
+    # cursor.execute('SELECT * FROM raspberries WHERE serialnumber = %s', (SN, ))
+    # coords = cursor.fetchone()
+    redis_server.set(SN, str((x_coord, y_coord)))
+    print('Test Socket: {}'.format(redis_server.get(SN)))
     return 'Get data'
 
 def register_user(SerialNumber, email, password):
     print(SerialNumber, email, password)
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-    cursor.execute('SELECT * FROM accounts WHERE serialnumber = %s OR email = %s', (SerialNumber, email))
+    cursor.execute('SELECT * FROM raspberries WHERE serialnumber = %s OR email = %s', (SerialNumber, email))
     account = cursor.fetchone()
     if account:
         msg = 'Account already exists!'
@@ -69,21 +90,30 @@ def register_user(SerialNumber, email, password):
     elif SerialNumber is None or password is None or email is None:
         msg = 'Please fill out the form!'
     else:
-        # Account doesnt exists and the form data is valid, now insert new account into accounts table
-        cursor.execute('INSERT INTO accounts VALUES (NULL, %s, %s, %s)', (SerialNumber, password, email))
+        # Account doesnt exists and the form data is valid, now insert new account into raspberries table
+        cursor.execute('INSERT INTO raspberries VALUES (NULL, %s, %s, %s, %s, %s)', (SerialNumber, password, email, 0, 0))
         mysql.connection.commit()
         msg = 'You have successfully registered! Please login.'
+        # session[SerialNumber] = (0, 0)
+        redis_server.set(SerialNumber, str((0, 0)))
+
     return msg
 
 def auth_user(SerialNumber, password):
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-    cursor.execute('SELECT * FROM accounts WHERE serialnumber = %s AND password = %s', (SerialNumber, password))
+    cursor.execute('SELECT * FROM raspberries WHERE serialnumber = %s AND password = %s', (SerialNumber, password))
         # Fetch one record and return result
     account = cursor.fetchone()
     return account
 
 @app.route('/login', methods=['POST', 'GET'])
 def login():
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute('SELECT * FROM raspberries')
+    accounts = cursor.fetchall()
+    for account in accounts:
+        if not redis_server.exists(account['serialnumber']):
+            redis_server.set(account['serialnumber'], str((0, 0)))
     if request.method == 'POST':
         if request.form.get('login-serialnumber') is None:
             if request.form.get('reg-password') == request.form.get('comfirm-password'):
@@ -115,11 +145,20 @@ def map():
         return render_template('index.html', SerialNumber=SerialNumber)
 
 @socket.on('get_time')
-def get_time():
+def get_time(SerialNumber):
+    print(SerialNumber)
+    # cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
     while True:
-        current_time = rasp_data.rasp_time
-        print(current_time)
-        emit('get_time', current_time)
+        coords = redis_server.get(SerialNumber).decode('ascii')
+        [x, y] = coords.strip('(').strip(')').split(',')
+        x_coord=float(x)
+        y_coord=float(y)
+        # cursor.execute('SELECT * FROM raspberries WHERE serialnumber = %s', (SerialNumber, ))
+        # coords = cursor.fetchone()
+        # print('Socket: {}'.format(coords))
+        # emit('get_time', (coords['x'], coords['y']))
+        print('Socket emit value {}'.format((x_coord, y_coord)))
+        emit('get_time', (x_coord, y_coord))
         time.sleep(1)
 
 @app.route('/submit',  methods=['POST'])
