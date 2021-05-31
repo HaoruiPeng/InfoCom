@@ -147,7 +147,6 @@ def map():
 @socket.on('get_time')
 def get_time(SerialNumber):
     print(SerialNumber)
-<<<<<<< HEAD
     # cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
     while True:
         coords = redis_server.get(SerialNumber).decode('ascii')
@@ -161,13 +160,8 @@ def get_time(SerialNumber):
         print('Socket emit value {}'.format((x_coord, y_coord)))
         emit('get_time', (x_coord, y_coord))
 =======
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-    while True:
-        cursor.execute('SELECT * FROM accounts WHERE serialnumber = %s', (SerialNumber, ))
-        account = cursor.fetchone()
-        current_time = rasp_data.rasp_time
-        emit('get_time', (account['id'], account['email']))
->>>>>>> 3c637b3 (socket retriving from mysql database and display value)
+>>>>>>> 3c637b32fb289745221e53cccf170916d2aaed6e
+>>>>>>> 10b2cd1d7a2aa123c4e7136f460fa3156627ec41
         time.sleep(1)
 
 @app.route('/submit',  methods=['POST'])
