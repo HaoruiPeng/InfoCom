@@ -159,9 +159,7 @@ def get_time(SerialNumber):
         # emit('get_time', (coords['x'], coords['y']))
         print('Socket emit value {}'.format((x_coord, y_coord)))
         emit('get_time', (x_coord, y_coord))
-=======
->>>>>>> 3c637b32fb289745221e53cccf170916d2aaed6e
->>>>>>> 10b2cd1d7a2aa123c4e7136f460fa3156627ec41
+
         time.sleep(1)
 
 @app.route('/submit',  methods=['POST'])
