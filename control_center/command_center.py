@@ -19,12 +19,14 @@ while True:
 
         # Look for the response
         amount_received = 0
-        amount_expected = len(message)
 
-        # while amount_received < amount_expected:
         data = sock.recv(64)
-        amount_received += len(data)
-        print('received {!r}'.format(data.decode()))
+        if int(data.decode()):
+            print('Drone found address, start delivering ...')
+            comfirm_data = sock.recv(64)
+            print(comfirm_data.decode())
+        else:
+            print('Fail find destination. Please comfirm your detination address...')
     except e:
         print(e)
         print('fail to send destination, try again...')
