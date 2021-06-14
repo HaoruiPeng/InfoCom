@@ -56,43 +56,41 @@ def main():
 
     # Listen for incoming connections
     sock.listen(1)
-    try:
-
-        while True:
-            # Wait for a connection
-            GET_ORDER = False
-            print('waiting for a new connection')
-            connection, client_address = sock.accept()
-            try:
-                print('connection from', client_address)
-                # Receive the data in small chunks and retransmit it
-                while True:
-                    data = connection.recv(32)
-                    print('received destination address {!r}'.format(data.decode()))
-                    address = data.decode()
-                    print("Search address {}".format(address))
-                    dst_location = geolocator.geocode(address + region)
+    while True:
+        # Wait for a connection
+        GET_ORDER = False
+        print('waiting for a new connection')
+        connection, client_address = sock.accept()
+        try:
+            print('connection from', client_address)
+            # Receive the data in small chunks and retransmit it
+            while True:
+                data = connection.recv(32)
+                print('received destination address {!r}'.format(data.decode()))
+                address = data.decode()
+                print("Search address {}".format(address))
+                dst_location = geolocator.geocode(address + region)
+                if dst_location is None:
+                    resp = "Could not find address {}, please try again".format(address)
+                    print(resp)
+                    resp_data = '0'
+                    connection.sendall(resp_data.encode())
+                else:
                     dst_coord = (dst_location.longitude, dst_location.latitude)
                     print(dst_coord)
-                    if dst_location is None:
-                        resp = "Could find address {}, please try again".format(address)
-                        print(resp)
-                        connection.sendall(resp.encode())
-                        # connection.close()
-                        break
-                    else:
-                        # resp = 'Found address, start delivering ...'
-                        # print(resp)
-                        # resp = connection.sendall(resp.encode())
-                        current_coord = moveDrone(current_coord, dst_coord)
-                        resp = "Packet delivered to {}.".format(address)
-                        print(resp)
-                        connection.sendall(resp.encode())
-            except:
-                print("Unexpected error:", sys.exc_info()[0])
-                connection.close()
-    except KeyboardInterrupt:
-        connection.close()
+                    resp = 'Found address, start delivering ...'
+                    print(resp)
+                    resp_data = '1'
+                    resp = connection.sendall(resp_data.encode())
+                    current_coord = moveDrone(current_coord, dst_coord)
+                    resp = "Packet delivered to {}.".format(address)
+                    print(resp)
+                    connection.sendall(resp.encode())
+        except KeyboardInterrupt:
+            print("Unexpected error:", sys.exc_info()[0])
+            connection.close()
+            break
+
 
 if __name__ == '__main__':
     SerialNumber = getserialNumber()
