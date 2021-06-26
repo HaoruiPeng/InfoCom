@@ -1,8 +1,8 @@
 const animateCircle = function(circle) {
   let startTime = 0;
   const totalTime = 5000; // 1000ms = 1s
-  circle.setAttributeNS(null, 'cx', circle_x_src);
-  circle.setAttributeNS(null, 'cy', circle_y_src);
+  circle.setAttributeNS(null, 'cx', circle_x);
+  circle.setAttributeNS(null, 'cy', circle_y);
   var x_step = circle_x_dst - circle_x_src;
   var y_step = circle_y_dst - circle_y_src;
   const animateStep = (timestamp) => {

@@ -3,6 +3,9 @@ import socket
 import sys
 import numpy as np
 import time
+import requests
+
+SERVER_URL = "http://192.168.0.150:5000/clock"
 
 def getserialNumber():
     # Extract serial from cpuinfo file
@@ -27,6 +30,8 @@ def get_directions(src, dst, speed):
 
 
 def moveDrone(src, dst):
+    global SerialNumber
+    params = {'SerialNumber': SerialNumber}
     print("Moving ...")
     src_x, src_y = src
     dst_x, dst_y = dst
@@ -38,17 +43,37 @@ def moveDrone(src, dst):
     while ((dst_x - x)**2 + (dst_y - y)**2)*10**6 > 0.0002:
         x = x + xSpeed
         y = y + ySpeed
-        print(x, y)
-        time.sleep(0.05)
-
+        with requests.Session() as session:
+            current_location = {'x': x,
+                                'y': y,
+                                'status': 'Activate'
+                                }
+            print(current_location)
+            resp = session.post(SERVER_URL, json=current_location, params=params)
+        time.sleep(0.02)
     return (x, y)
 
 def main():
+    global SerialNumber
+    params = {'SerialNumber': SerialNumber}
     current_coord = (13.1968122, 55.6882073)
+    try:
+        with open('location_save.txt', 'r') as file:
+            data = file.readline().split(',')
+            current_coord = (float(data[0]), float(data[1]))
+    except:
+        pass
+    with requests.Session() as session:
+        current_location = {'x': current_coord[0],
+                            'y': current_coord[1],
+                            'status': 'Idle'
+                            }
+        resp = session.post(SERVER_URL, json=current_location, params=params)
     dst_coord = current_coord
     geolocator = Nominatim(user_agent="my_request")
     region = ", Lund, Skåne, Sweden"
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     # Bind the socket to the port
     server_address = ('0.0.0.0', 10000)
     print('starting up on {} port {}'.format(*server_address))
@@ -65,7 +90,10 @@ def main():
             print('connection from', client_address)
             # Receive the data in small chunks and retransmit it
             while True:
-                data = connection.recv(32)
+                data = connection.recv(128)
+                if len(data) < 5:
+                    print('Invalide input')
+                    break
                 print('received destination address {!r}'.format(data.decode()))
                 address = data.decode()
                 print("Search address {}".format(address))
@@ -83,16 +111,30 @@ def main():
                     resp_data = '1'
                     resp = connection.sendall(resp_data.encode())
                     current_coord = moveDrone(current_coord, dst_coord)
+                    with requests.Session() as session:
+                        current_location = {'x': current_coord[0],
+                                            'y': current_coord[1],
+                                            'status': 'Idle'
+                                            }
+                        print(current_location)
+                        resp = session.post(SERVER_URL, json=current_location, params=params)
+                        print(resp)
                     resp = "Packet delivered to {}.".format(address)
-                    print(resp)
                     connection.sendall(resp.encode())
+                    with open('location_save.txt', 'w+') as file:
+                        file.write(str(current_coord[0]) + ',' +  str(current_coord[1]))
+
         except KeyboardInterrupt:
             print("Unexpected error:", sys.exc_info()[0])
             connection.close()
+            with open('location_save.txt', 'w+') as file:
+                file.write(str(current_coord[0]) + ',' +  str(current_coord[1]))
             break
 
 
+
 if __name__ == '__main__':
+    global SerialNumber
     SerialNumber = getserialNumber()
     print("Serial Number: {}".format(SerialNumber))
     main()

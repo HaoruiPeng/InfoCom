@@ -19,7 +19,7 @@ socket = SocketIO(app, cors_allowed_origins="*")
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = ''
-app.config['MYSQL_DB'] = 'RaspberryPi'
+app.config['MYSQL_DB'] = 'RaspberryPiuserDB'
 
 # redis_server = redis.Redis("redis://127.0.0.1:6379")
 redis_server = redis.Redis("localhost")
@@ -58,6 +58,13 @@ def translate(coords):
 def do_GET():
     return redirect(url_for('login'))
 
+@app.route('/status')
+def get_status():
+    SN = request.args.get('SerialNumber')
+    SN_status = SN+'status'
+    status = redis_server.get(SN_status).decode('ascii')
+    return status
+
 @app.route('/clock', methods=['POST'])
 def get_clock():
     SN = request.args.get('SerialNumber')
@@ -66,20 +73,23 @@ def get_clock():
     coords = request.get_json()
     x_coord = coords['x']
     y_coord = coords['y']
+    status = coords['status']
     print('##############################')
     # cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-    # cursor.execute('UPDATE raspberries SET x = %s WHERE serialnumber = %s', (x_coord, SN))
+    # cursor.execute('UPDATE RaspberryPiusers SET x = %s WHERE serialnumber = %s', (x_coord, SN))
     # print("SN {}: ({}, {})".format(SN, x_coord, y_coord))
-    # cursor.execute('SELECT * FROM raspberries WHERE serialnumber = %s', (SN, ))
+    # cursor.execute('SELECT * FROM RaspberryPiusers WHERE serialnumber = %s', (SN, ))
     # coords = cursor.fetchone()
+    SN_status = SN+'status'
     redis_server.set(SN, str((x_coord, y_coord)))
-    print('Test Socket: {}'.format(redis_server.get(SN)))
+    redis_server.set(SN_status, status)
+    print('Test Socket: {}, {}'.format(redis_server.get(SN), redis_server.get(SN_status)))
     return 'Get data'
 
 def register_user(SerialNumber, email, password):
     print(SerialNumber, email, password)
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-    cursor.execute('SELECT * FROM raspberries WHERE serialnumber = %s OR email = %s', (SerialNumber, email))
+    cursor.execute('SELECT * FROM RaspberryPiusers WHERE serialnumber = %s OR email = %s', (SerialNumber, email))
     account = cursor.fetchone()
     if account:
         msg = 'Account already exists!'
@@ -90,8 +100,8 @@ def register_user(SerialNumber, email, password):
     elif SerialNumber is None or password is None or email is None:
         msg = 'Please fill out the form!'
     else:
-        # Account doesnt exists and the form data is valid, now insert new account into raspberries table
-        cursor.execute('INSERT INTO raspberries VALUES (NULL, %s, %s, %s, %s, %s)', (SerialNumber, password, email, 0, 0))
+        # Account doesnt exists and the form data is valid, now insert new account into RaspberryPiusers table
+        cursor.execute('INSERT INTO RaspberryPiusers VALUES (NULL, %s, %s, %s, %s, %s)', (SerialNumber, password, email, 0, 0))
         mysql.connection.commit()
         msg = 'You have successfully registered! Please login.'
         # session[SerialNumber] = (0, 0)
@@ -101,7 +111,7 @@ def register_user(SerialNumber, email, password):
 
 def auth_user(SerialNumber, password):
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-    cursor.execute('SELECT * FROM raspberries WHERE serialnumber = %s AND password = %s', (SerialNumber, password))
+    cursor.execute('SELECT * FROM RaspberryPiusers WHERE serialnumber = %s AND password = %s', (SerialNumber, password))
         # Fetch one record and return result
     account = cursor.fetchone()
     return account
@@ -109,7 +119,7 @@ def auth_user(SerialNumber, password):
 @app.route('/login', methods=['POST', 'GET'])
 def login():
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-    cursor.execute('SELECT * FROM raspberries')
+    cursor.execute('SELECT * FROM RaspberryPiusers')
     accounts = cursor.fetchall()
     for account in accounts:
         if not redis_server.exists(account['serialnumber']):
@@ -147,50 +157,48 @@ def map():
 @socket.on('get_time')
 def get_time(SerialNumber):
     print(SerialNumber)
-    # cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    SerialNumber_status = SerialNumber+'status'
     while True:
         coords = redis_server.get(SerialNumber).decode('ascii')
+        status = redis_server.get(SerialNumber_status).decode('ascii')
         [x, y] = coords.strip('(').strip(')').split(',')
         x_coord=float(x)
         y_coord=float(y)
-        # cursor.execute('SELECT * FROM raspberries WHERE serialnumber = %s', (SerialNumber, ))
-        # coords = cursor.fetchone()
-        # print('Socket: {}'.format(coords))
-        # emit('get_time', (coords['x'], coords['y']))
+        x_translated, y_translated = translate((x_coord, y_coord))
         print('Socket emit value {}'.format((x_coord, y_coord)))
-        emit('get_time', (x_coord, y_coord))
+        emit('get_time', (x_translated, y_translated, status))
 
         time.sleep(1)
 
-@app.route('/submit',  methods=['POST'])
-def do_submit():
-    geolocator = Nominatim(user_agent="my_request")
-    region = ", Lund, Skåne, Sweden"
-    r = json.loads(request.data.decode())
-    if r['dst_addr'] == "" or r['src_addr'] == "":
-        return "Input your address"
-    src_addr = r['src_addr'] + region
-    dst_addr = r['dst_addr'] + region
-
-    src_location = geolocator.geocode(src_addr)
-    dst_location = geolocator.geocode(dst_addr)
-
-    if src_location is None and dst_location is None:
-        return "Couldn't find source and destinations addresses, try another input"
-    elif src_location is None:
-        return "Couldn't find source address, try another input"
-    elif dst_location is None:
-        return "Couldn't find destinations address, try another input"
-
-    src_x, src_y = translate((src_location.longitude, src_location.latitude))
-    dst_x, dst_y = translate((dst_location.longitude, dst_location.latitude))
-
-    data = { 'src_x': src_x,
-             'src_y': src_y,
-             'dst_x': dst_x,
-             'dst_y': dst_y
-            }
-    return jsonify(data)
+# @app.route('/submit',  methods=['POST'])
+# def do_submit():
+#     geolocator = Nominatim(user_agent="my_request")
+#     region = ", Lund, Skåne, Sweden"
+#     r = json.loads(request.data.decode())
+#     if r['dst_addr'] == "" or r['src_addr'] == "":
+#         return "Input your address"
+#     src_addr = r['src_addr'] + region
+#     dst_addr = r['dst_addr'] + region
+#
+#     src_location = geolocator.geocode(src_addr)
+#     dst_location = geolocator.geocode(dst_addr)
+#
+#     if src_location is None and dst_location is None:
+#         return "Couldn't find source and destinations addresses, try another input"
+#     elif src_location is None:
+#         return "Couldn't find source address, try another input"
+#     elif dst_location is None:
+#         return "Couldn't find destinations address, try another input"
+#
+#     src_x, src_y = translate((src_location.longitude, src_location.latitude))
+#     dst_x, dst_y = translate((dst_location.longitude, dst_location.latitude))
+#
+#     data = { 'src_x': src_x,
+#              'src_y': src_y,
+#              'dst_x': dst_x,
+#              'dst_y': dst_y
+#             }
+#     return jsonify(data)
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')
